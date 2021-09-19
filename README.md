@@ -1,10 +1,10 @@
-# Parallel RM (PRM) for Linux Distributions.
+## Parallel RM (PRM) for Linux Distributions.
 
 The purpose of this utility is to speed up deletion of directories with large amount of files by utilizing threading.
 
 
 
-# prm --help
+## prm --help
 usage: prm [-h] [-t [THREADS]] [-v] [-f] Path
 
 Remove a directory tree in parallel using several threads
