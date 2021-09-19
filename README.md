@@ -4,7 +4,7 @@ The purpose of this utility is to speed up deletion of directories with large am
 
 
 
-## prm --help
+prm --help
 usage: prm [-h] [-t [THREADS]] [-v] [-f] Path
 
 Remove a directory tree in parallel using several threads
