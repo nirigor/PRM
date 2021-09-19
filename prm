@@ -1,0 +1,105 @@
+#!/usr/bin/python
+
+import os
+import threading
+import sys
+import time
+import argparse
+
+class myThread (threading.Thread):
+        def __init__(self, threadID, name, files):
+                threading.Thread.__init__(self)
+                self.threadID = threadID
+                self.name = name
+		self.files = files
+        def run(self):
+                delfiles(self.name, self.files)
+
+
+def lstdir( checkpath, level ):
+        global TNUM, FileLists, count, DirList, count
+        for filename in os.listdir( checkpath ):
+                if os.path.isdir( checkpath + filename ):
+			if ( len(DirList) == level ):
+				DirList.append([])
+			DirList[level].append(checkpath + filename + "/")
+			lstdir( checkpath + filename + "/", level + 1 )
+                else:
+                        FileLists[ count % TNUM ].append(checkpath + filename)
+                        count += 1
+
+
+def delfiles( threadName, filelist ):
+	#print ("Starting : " + threadName + " at " + time.ctime(time.time()) + "\n")
+	tmp = filelist.pop()
+	while ( tmp != 'q' ):
+		os.unlink(tmp)
+		tmp = filelist.pop()
+	#print (threadName + " Finished at " + time.ctime(time.time()) + "\n")
+
+def main():
+	global TNUM, FileLists, DirList, count
+
+        FileLists = []
+        DirList = []
+        RMThread = []
+	
+	TNUM = 10
+	count = 0
+
+	parser = argparse.ArgumentParser(description="Remove a directory tree in parallel using several threads")
+	parser.add_argument("Path", help="The directory path you wish to delete", type=str)
+	parser.add_argument("-t", "--threads", nargs="?", help="Number of threads to run the delete operation, (Default: 10)", action="store", type=int)
+	parser.add_argument("-v", "--verbose", action="store_true")
+	parser.add_argument("-f", "--force", help="Do not prompt", action="store_true")
+	args = parser.parse_args()
+	
+	if args.force:
+		ans = 'y'
+	else:
+		ans = raw_input('prm: completely delete ' + args.Path + ' and all its content ? [y/n] ')
+	
+	if ans.lower() == 'y':
+		
+		if args.Path[len(args.Path)-1] == "/":
+			PATH = args.Path
+		else:
+			PATH = args.Path + "/"
+
+		if args.threads:
+			TNUM = args.threads
+
+		DirList.append([PATH])
+
+		for i in range(TNUM):
+			FileLists.append(['q'])
+		try:
+			if args.verbose:
+				print (time.ctime(time.time()) + ": Starting Directory TreeWalk")
+			lstdir(PATH, 1)
+		
+		
+			if args.verbose:
+				print (time.ctime(time.time()) + ": Starting " + str(TNUM) + " rm threads")
+			for i in range(TNUM):
+				RMThread.append( myThread(i, "RM-Thread-"+str(i), FileLists[i]))
+				RMThread[i].start()
+		
+			for i in range(TNUM):
+				RMThread[i].join()
+			if args.verbose:
+				print (time.ctime(time.time()) + ": Starting directory tree delete")
+			for i in range(len(DirList)-1,-1,-1):
+				for j in range(len(DirList[i])):
+					os.rmdir(DirList[i][j])
+			if args.verbose:
+				print (time.ctime(time.time()) + ": PRM for path: " + PATH + " had finished")
+		except:
+			print "Error: Unable to delete dir"	
+
+	else:
+		print("Delete operation was aborted")
+
+
+if ( __name__ == '__main__' ):
+        main()
